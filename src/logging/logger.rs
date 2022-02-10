@@ -32,6 +32,14 @@ impl Logger {
         let _ = self.logging_join_handle.join();
     }
 
+    pub fn log_error(&self, message: String) {
+        self.log_trace(message);
+    }
+
+    pub fn log_info(&self, message: String) {
+        self.log_trace(message);
+    }
+
     pub fn log_trace(&self, message: String) {
         let _ = self.log_message_sender.send(LogEntry::new(message));
     }

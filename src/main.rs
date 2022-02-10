@@ -1,8 +1,10 @@
 #![feature(process_exitcode_placeholder)]
 
+mod git;
 mod base;
 mod phases;
 mod logging;
+mod configuration;
 
 fn main() -> std::process::ExitCode {
     let mut current_state = phases::make_initial_phase();

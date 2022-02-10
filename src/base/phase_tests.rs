@@ -60,6 +60,9 @@ fn check_iteration_on_phases() {
 
 #[test]
 fn check_exit_codes() {
-    assert_eq!(format!("{:?}", (Phase::TerminalSuccess::<()>).as_exit_code()), "ExitCode(ExitCode(0))");
-    assert_eq!(format!("{:?}", (Phase::TerminalError::<()>).as_exit_code()),   "ExitCode(ExitCode(1))");
+    let success = format!("{:?}", (Phase::TerminalSuccess::<()>).as_exit_code());
+    let error   = format!("{:?}", (Phase::TerminalError::<()>).as_exit_code());
+
+    assert!(vec![String::from("ExitCode(ExitCode(0))"), String::from("ExitCode(unix_exit_status(0))")].contains(&success));
+    assert!(vec![String::from("ExitCode(ExitCode(1))"), String::from("ExitCode(unix_exit_status(1))")].contains(&error));
 }

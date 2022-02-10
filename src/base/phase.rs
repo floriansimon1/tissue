@@ -1,10 +1,10 @@
-pub enum Phase {
+pub enum Phase<Globals> {
     #[allow(dead_code)] TerminalError,
     TerminalSuccess,
-    NonTerminalPhase(Box<dyn NonTerminalPhaseTrait>)
+    NonTerminalPhase(Box<dyn NonTerminalPhaseTrait<Globals>>)
 }
 
-impl Phase {
+impl<Globals> Phase<Globals> {
     pub fn can_continue(&self) -> bool {
         match self {
             Phase::NonTerminalPhase(_) => true,
@@ -12,18 +12,18 @@ impl Phase {
         }
     }
 
-    pub fn next(self) -> Phase {
+    pub fn next(self, globals: &mut Globals) -> Phase<Globals> {
         match self {
-            Phase::NonTerminalPhase(phase) => phase.run(),
+            Phase::NonTerminalPhase(phase) => phase.run(globals),
             _                              => self
         }
     }
 
     pub fn as_exit_code(&self) -> std::process::ExitCode {
         match self {
-            Phase::TerminalSuccess => std::process::ExitCode::SUCCESS,
-            Phase::TerminalError   => std::process::ExitCode::FAILURE,
-            _                      => panic!("Trying to get a exit code for a non-terminal program phase!")
+            Phase::TerminalSuccess::<Globals> => std::process::ExitCode::SUCCESS,
+            Phase::TerminalError::<Globals>   => std::process::ExitCode::FAILURE,
+            _                                 => panic!("Trying to get a exit code for a non-terminal program phase!")
         }
     }
 
@@ -36,11 +36,11 @@ impl Phase {
     }
 }
 
-pub fn continue_with(phase: Box<dyn NonTerminalPhaseTrait>) -> Phase {
+pub fn continue_with<T>(phase: Box<dyn NonTerminalPhaseTrait<T>>) -> Phase<T> {
     Phase::NonTerminalPhase(phase)
 }
 
-pub trait NonTerminalPhaseTrait {
-    fn run(self: Box<Self>) -> Phase;
-    fn name(&self)          -> &'static str;
+pub trait NonTerminalPhaseTrait<Globals> {
+    fn run(self: Box<Self>, globals: &mut Globals) -> Phase<Globals>;
+    fn name(&self)                                 -> &'static str;
 }

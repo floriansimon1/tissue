@@ -3,23 +3,23 @@ struct Phase2;
 
 use super::phase::{self, Phase, NonTerminalPhaseTrait};
 
-impl NonTerminalPhaseTrait for Phase1 {
+impl NonTerminalPhaseTrait<()> for Phase1 {
     fn name(&self) -> &'static str {
         "Phase 1"
     }
 
-    fn run(self: Box<Self>) -> phase::Phase {
+    fn run(self: Box<Self>, _: &mut ()) -> phase::Phase<()> {
         phase::continue_with(Box::new(Phase2 {}))
     }
 }
 
-impl phase::NonTerminalPhaseTrait for Phase2 {
+impl phase::NonTerminalPhaseTrait<()> for Phase2 {
     fn name(&self) -> &'static str {
         "Phase 2"
     }
 
-    fn run(self: Box<Self>) -> phase::Phase {
-        phase::Phase::TerminalSuccess
+    fn run(self: Box<Self>, _: &mut ()) -> phase::Phase<()> {
+        phase::Phase::TerminalSuccess::<()>
     }
 }
 
@@ -34,7 +34,7 @@ fn check_iteration_on_phases() {
 
     assert!(current_phase.can_continue(), "We cannot go anywhere from Phase 1");
 
-    current_phase = current_phase.next();
+    current_phase = current_phase.next(&mut ());
 
     match &current_phase {
         Phase::NonTerminalPhase(phase) => assert_eq!(phase.name(), (Phase2 {}).name()),
@@ -43,7 +43,7 @@ fn check_iteration_on_phases() {
 
     assert!(current_phase.can_continue(), "We could not run Phase 2");
 
-    current_phase = current_phase.next();
+    current_phase = current_phase.next(&mut ());
 
     assert!(!current_phase.can_continue(), "Phase 2 was not the last one");
 
@@ -51,7 +51,7 @@ fn check_iteration_on_phases() {
         panic!("We stayed on phase 2")
     }
 
-    current_phase = current_phase.next().next().next().next();
+    current_phase = current_phase.next(&mut ()).next(&mut ()).next(&mut ()).next(&mut ());
 
     if let Phase::TerminalSuccess = current_phase {} else {
         panic!("We did not remain on our terminal success")
@@ -60,6 +60,6 @@ fn check_iteration_on_phases() {
 
 #[test]
 fn check_exit_codes() {
-    assert_eq!(format!("{:?}", (Phase::TerminalSuccess).as_exit_code()), "ExitCode(ExitCode(0))");
-    assert_eq!(format!("{:?}", (Phase::TerminalError).as_exit_code()),   "ExitCode(ExitCode(1))");
+    assert_eq!(format!("{:?}", (Phase::TerminalSuccess::<()>).as_exit_code()), "ExitCode(ExitCode(0))");
+    assert_eq!(format!("{:?}", (Phase::TerminalError::<()>).as_exit_code()),   "ExitCode(ExitCode(1))");
 }

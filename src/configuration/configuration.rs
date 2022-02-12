@@ -18,4 +18,8 @@ impl Configuration {
             project_name:    String::from(DEFAULT_PROJECT_NAME),
         }
     }
+
+    pub fn get_project_branch(&self) -> String {
+        self.branch_prefix.clone() + &self.project_name
+    }
 }

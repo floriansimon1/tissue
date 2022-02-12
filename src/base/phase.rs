@@ -36,7 +36,7 @@ impl<Globals> Phase<Globals> {
     }
 }
 
-pub fn continue_with<T>(phase: Box<dyn NonTerminalPhaseTrait<T>>) -> Phase<T> {
+pub fn continue_with<Globals>(phase: Box<dyn NonTerminalPhaseTrait<Globals>>) -> Phase<Globals> {
     Phase::NonTerminalPhase(phase)
 }
 

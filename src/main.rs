@@ -4,6 +4,7 @@ mod git;
 mod base;
 mod phases;
 mod logging;
+mod commands;
 mod configuration;
 
 fn main() -> std::process::ExitCode {

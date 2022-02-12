@@ -1,4 +1,5 @@
 mod initial;
+mod execute_command;
 mod parse_command_line;
 mod setup_crash_handler;
 mod verify_git_repository;

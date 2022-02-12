@@ -40,6 +40,10 @@ impl Logger {
         self.log_trace(message);
     }
 
+    pub fn log_health(&self, message: String) {
+        self.log_trace(message);
+    }
+
     pub fn log_trace(&self, message: String) {
         let _ = self.log_message_sender.send(LogEntry::new(message));
     }

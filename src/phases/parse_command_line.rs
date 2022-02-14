@@ -4,7 +4,7 @@ use clap;
 
 use crate::commands;
 use crate::base::phase;
-use crate::phases::{global, verify_git_repository};
+use crate::phases::{global, configure_logging_backends};
 
 pub struct ParseCommandLine;
 
@@ -61,7 +61,7 @@ impl phase::NonTerminalPhaseTrait<global::Global> for ParseCommandLine {
             global.working_directory_path = path;
         }
 
-        phase::continue_with(Box::new(verify_git_repository::VerifyGitRepository))
+        phase::continue_with(Box::new(configure_logging_backends::ConfigureLoggingBackends))
     }
 }
 

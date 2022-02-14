@@ -1,7 +1,5 @@
 use std::{convert, path};
 
-use tap::Tap;
-
 use crate::git;
 use crate::base::phase;
 use crate::logging::logger;
@@ -29,7 +27,7 @@ pub fn open_project_branch(logger: &logger::Logger, repository: git2::Repository
     .find_branch(branch_name, git2::BranchType::Local)
     .map(|_| (/* Release the branch */))
     .map(move |_| repository)
-    .tap(|_| logger.log_info(format!("Found local branch `{}`", branch_name)))
+    .map(|repository| { logger.log_info(format!("Found local branch `{}`", branch_name)); repository })
     .map_err(|error| match error.code() {
         git2::ErrorCode::NotFound => format!("Could not find a local branch named `{}`!", branch_name),
         _                         => format!("An unknown error occurred while looking for a local branch named {}!", branch_name)

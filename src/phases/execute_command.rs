@@ -1,5 +1,6 @@
 use git2;
 
+use crate::commands;
 use crate::base::phase;
 use crate::phases::global;
 
@@ -19,6 +20,15 @@ impl phase::NonTerminalPhaseTrait<global::Global> for ExecuteCommand {
     }
 
     fn run(self: Box<Self>, global: &mut global::Global) -> phase::Phase<global::Global> {
-        phase::Phase::TerminalSuccess
+        global.logger.log_trace(format!("Executing command `{:?}`", global.command));
+
+        let result = match global.command {
+            commands::Command::Help => Ok(()),
+            commands::Command::List => commands::list_issues(&global, &self.repository),
+        };
+
+        result
+        .map(|_| phase::Phase::TerminalSuccess)
+        .unwrap_or(phase::Phase::TerminalError)
     }
 }

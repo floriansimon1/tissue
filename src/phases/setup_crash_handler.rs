@@ -1,8 +1,7 @@
 use human_panic::setup_panic;
 
 use crate::base::phase;
-use crate::phases::global;
-use crate::phases::configure_logging_backends;
+use crate::phases::{global, parse_command_line};
 
 pub struct SetupCrashHandler;
 
@@ -19,6 +18,6 @@ impl phase::NonTerminalPhaseTrait<global::Global> for SetupCrashHandler {
             homepage: "N/A".into(),
         });
 
-        phase::continue_with(Box::new(configure_logging_backends::ConfigureLoggingBackends))
+        phase::continue_with(Box::new(parse_command_line::ParseCommandLine))
     }
 }

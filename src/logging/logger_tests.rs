@@ -10,6 +10,9 @@ struct TestLoggingBackend {
 }
 
 impl LoggingBackend for TestLoggingBackend {
+    fn try_flush(&self)
+    {}
+
     fn log_entry(&self, log_entry: &LogEntry) {
         self
         .messages

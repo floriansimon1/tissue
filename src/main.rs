@@ -1,10 +1,15 @@
 #![feature(process_exitcode_placeholder)]
+#![allow(unused_parens)]
 
+
+mod io;
 mod git;
 mod base;
 mod phases;
+mod system;
 mod logging;
 mod commands;
+mod structure;
 mod configuration;
 
 fn main() -> std::process::ExitCode {

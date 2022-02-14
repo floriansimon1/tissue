@@ -1,7 +1,8 @@
-use crate::logging;
 use crate::base::phase;
-use crate::phases::global;
-use crate::phases::parse_command_line;
+use crate::phases::{global, verify_git_repository};
+
+#[allow(unused_imports)]
+use crate::logging;
 
 pub struct ConfigureLoggingBackends;
 
@@ -10,9 +11,13 @@ impl phase::NonTerminalPhaseTrait<global::Global> for ConfigureLoggingBackends {
         "ConfigureLoggingBackends"
     }
 
+    #[allow(unused_variables)]
     fn run(self: Box<Self>, global: &mut global::Global) -> phase::Phase<global::Global> {
-        global.logger.register_backend(Box::new(logging::backends::StdoutBackend));
+        #[cfg(debug)]
+        {
+            global.logger.register_backend(Box::new(logging::backends::StdoutBackend));
+        }
 
-        phase::continue_with(Box::new(parse_command_line::ParseCommandLine))
+        phase::continue_with(Box::new(verify_git_repository::VerifyGitRepository))
     }
 }

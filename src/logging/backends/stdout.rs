@@ -8,7 +8,7 @@ pub struct StdoutBackend;
 
 impl LoggingBackend for StdoutBackend {
     fn log_entry(&self, entry: &LogEntry) {
-        logging::safe_println(format!(">> {}", entry.message));
+        logging::safe_println(&format!(">> {}", entry.message));
     }
 
     fn try_flush(&self) {

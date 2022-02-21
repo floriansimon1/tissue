@@ -1,49 +1,54 @@
+use std::str;
+
 use git2;
 
 use crate::phases::global;
-use crate::{git, logging};
+use crate::issues::parser;
+use crate::steps::issues_tree;
 use crate::io::{decorate, paging};
-use crate::structure::directories::get_issues_directory;
+use crate::{git, logging, errors};
 
-pub fn list_issues(global: &global::Global, repository: &git2::Repository) -> Result<(), ()> {
-    let branch = repository
-    .find_branch(&global.configuration.get_project_branch(), git2::BranchType::Local)
-    .map_err(|error| global.logger.log_error(format!("An error occurred while looking for project branch: `{error:?}`")))?;
+fn extract_formatted_title<'repository>(repository: &'repository git2::Repository, blob_tree_entry: &git2::TreeEntry<'repository>)
+-> Result<String, &'static str> {
+    let object = blob_tree_entry
+    .to_object(&repository)
+    .or(Err("<Invalid Git object>"))?;
 
-    let commit = git
-    ::resolve_branch_to_commit(repository, branch)
-    .map_err(|error| global.logger.log_error(format!("An error occurred while resolving the project branch to a commit: `{error}`")))?;
+    let blob = object
+    .as_blob()
+    .ok_or("<Invalid Git object type>")?;
 
-    let empty = git
-    ::get_tree(&repository, commit, &get_issues_directory())
+    let text = str::from_utf8(blob.content()).or(Err("<Invalid UTF-8>"))?;
+
+    parser::parse_title(text).ok_or("<Untitled>")
+}
+
+fn format_entry<'repository>(repository: &'repository git2::Repository, blob_tree_entry: &git2::TreeEntry<'repository>)
+-> String {
+    let title     = extract_formatted_title(&repository, &blob_tree_entry).unwrap_or_else(String::from);
+    let file_name = blob_tree_entry.name().unwrap_or("<Invalid file>");
+
+    decorate::list_element(&format!("{file_name} - {title}"))
+}
+
+pub fn list_issues<'repository>(global: &global::Global, repository: &'repository git2::Repository)
+-> Result<(), ()> {
+    issues_tree
+    ::get_issues_tree(&global, &repository)
     .map(|tree| {
         let mut pager = paging::Pager::new();
+        let files     = git::list_files(&tree);
 
-        pager.page_lines(&global.logger, (
-            git
-            ::list_files(&tree)
-            .map(|file| {
-                let file_name = file.name().unwrap_or("<Invalid file>");
-                let title     = "<Unknown title>";
-
-                decorate::list_element(&format!("{file_name} - {title}"))
-            })
-        ));
+        let empty = pager.page_lines(&global.logger, files.map(|blob| format_entry(&repository, &blob)));
 
         pager.wait();
 
-        tree.is_empty()
+        if empty {
+            logging::safe_println("There is no issue in this project yet!");
+        }
     })
-    .or_else(|error| match error {
-        git::FileListingError::CannotGetDirectory         => Ok(true),
-        git::FileListingError::CannotGetRoot              => { global.logger.log_error(format!("Cannot find worktree!"));                    Err(()) },
-        git::FileListingError::CannotGetDirectoryObject   => { global.logger.log_error(format!("Cannot retrieve worktree object!"));         Err(()) },
-        git::FileListingError::ProjectDirectoryIsNotATree => { global.logger.log_error(format!("The issues tree entry is not a directory")); Err(()) },
-    })?;
-
-    if empty {
-        logging::safe_println(String::from("There is no issue in this project yet!"));
-    }
-
-    Ok(())
+    .map_err(errors::issues_tree::explain_error)
+    .map_err(String::from)
+    .map_err(|error| global.logger.log_error(error))
 }
+

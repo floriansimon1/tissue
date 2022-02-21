@@ -1,6 +1,6 @@
 use std::io;
 
-pub fn safe_print(string: String) {
+pub fn safe_print(string: &str) {
     use std::io::Write;
 
     let mut stdout = io::stdout();
@@ -11,6 +11,7 @@ pub fn safe_print(string: String) {
     }
 }
 
-pub fn safe_println(string: String) {
-    safe_print(string + "\n");
+pub fn safe_println(string: &str) {
+    safe_print(string);
+    safe_print("\n");
 }

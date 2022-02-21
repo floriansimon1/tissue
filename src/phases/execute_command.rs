@@ -22,9 +22,10 @@ impl phase::NonTerminalPhaseTrait<global::Global> for ExecuteCommand {
     fn run(self: Box<Self>, global: &mut global::Global) -> phase::Phase<global::Global> {
         global.logger.log_trace(format!("Executing command `{:?}`", global.command));
 
-        let result = match global.command {
-            commands::Command::Help => Ok(()),
-            commands::Command::List => commands::list_issues(&global, &self.repository),
+        let result = match &global.command {
+            commands::Command::Help       => Ok(()),
+            commands::Command::List       => commands::list_issues(&global, &self.repository),
+            commands::Command::Show(show) => commands::show_issue(&global, &self.repository, &show.issue_name),
         };
 
         result

@@ -73,7 +73,9 @@ impl Pager {
         Pager { guard, child, real_stdout, closed: false }
     }
 
-    pub fn page_lines(&mut self, logger: &logger::Logger, iterator: impl Iterator<Item = String>) {
+    pub fn page_lines(&mut self, logger: &logger::Logger, iterator: impl Iterator<Item = String>) -> bool {
+        let mut empty = true;
+
         /*
         * We want whatever should have been printed to stdout by now to be flushed before
         * we start writing our paged data to preserve order.
@@ -81,14 +83,18 @@ impl Pager {
         logger.try_flush_all();
 
         for output_text in iterator {
+            empty = false;
+
             let wait_result = sync::Arc::get_mut(&mut self.child).unwrap().try_wait();
 
             if wait_result.map(|status| status.is_some() ).unwrap_or(false) {
                 break;
             }
 
-            logging::safe_println(output_text);
+            logging::safe_println(&output_text);
         }
+
+        empty
     }
 
     fn close_if_necessary(&mut self) {

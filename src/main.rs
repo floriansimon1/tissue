@@ -1,12 +1,14 @@
 #![feature(process_exitcode_placeholder)]
 #![allow(unused_parens)]
 
-
 mod io;
 mod git;
 mod base;
+mod steps;
 mod phases;
+mod errors;
 mod system;
+mod issues;
 mod logging;
 mod commands;
 mod structure;

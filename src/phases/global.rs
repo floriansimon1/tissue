@@ -9,6 +9,7 @@ pub struct Global {
     pub command:                commands::Command,
     pub logger:                 logger::Logger,
     pub working_directory_path: path::PathBuf,
+    pub terminal_is_tty:        bool,
 }
 
 pub fn instantiate() -> Global {
@@ -23,6 +24,7 @@ pub fn instantiate() -> Global {
 
                 command:                commands::Command::Help,
                 working_directory_path: current_directory_path.clone(),
+                terminal_is_tty:        unsafe { libc::isatty(libc::STDOUT_FILENO) == 1 },
                 configuration:          configuration::Configuration::default(current_directory_path),
             }
         },

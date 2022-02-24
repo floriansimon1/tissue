@@ -9,24 +9,26 @@ use crate::io::{decorate, paging};
 use crate::{git, logging, errors};
 
 fn extract_formatted_title<'repository>(repository: &'repository git2::Repository, blob_tree_entry: &git2::TreeEntry<'repository>)
--> Result<String, &'static str> {
+-> Result<String, String> {
     let object = blob_tree_entry
     .to_object(&repository)
-    .or(Err("<Invalid Git object>"))?;
+    .map_err(|_| decorate::decorate_placeholder("Invalid Git object"))?;
 
     let blob = object
     .as_blob()
-    .ok_or("<Invalid Git object type>")?;
+    .ok_or_else(|| decorate::decorate_placeholder("Invalid Git object type"))?;
 
-    let text = str::from_utf8(blob.content()).or(Err("<Invalid UTF-8>"))?;
+    let text = str
+    ::from_utf8(blob.content())
+    .map_err(|_| decorate::decorate_placeholder("Invalid UTF-8"))?;
 
-    parser::parse_title(text).ok_or("<Untitled>")
+    parser::parse_title(text).ok_or_else(|| decorate::decorate_placeholder("Untitled"))
 }
 
 fn format_entry<'repository>(repository: &'repository git2::Repository, blob_tree_entry: &git2::TreeEntry<'repository>)
 -> String {
     let title     = extract_formatted_title(&repository, &blob_tree_entry).unwrap_or_else(String::from);
-    let file_name = blob_tree_entry.name().unwrap_or("<Invalid file>");
+    let file_name = blob_tree_entry.name().map(String::from).unwrap_or_else(|| decorate::decorate_placeholder("Invalid file"));
 
     decorate::list_element(&format!("{file_name} - {title}"))
 }
@@ -51,4 +53,3 @@ pub fn list_issues<'repository>(global: &global::Global, repository: &'repositor
     .map_err(String::from)
     .map_err(|error| global.logger.log_error(error))
 }
-

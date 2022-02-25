@@ -1,16 +1,26 @@
 #[derive(Debug)]
+
+// The order of enum values here is important!
+#[derive(PartialEq, PartialOrd, Clone, Copy)]
+pub enum Level {
+    Trace,
+    Info,
+    Error,
+}
+
 pub struct LogEntry {
-    pub message: String
+    pub message: String,
+    pub level:   Level
 }
 
 impl Clone for LogEntry {
     fn clone(&self) -> LogEntry {
-        LogEntry::new(self.message.clone())
+        LogEntry::new(self.message.clone(), self.level)
     }
 }
 
 impl LogEntry {
-    pub fn new(message: String) -> LogEntry {
-        LogEntry { message }
+    pub fn new(message: String, level: Level) -> LogEntry {
+        LogEntry { message, level }
     }
 }

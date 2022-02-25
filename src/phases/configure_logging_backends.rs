@@ -1,12 +1,20 @@
 use colored;
 
 use crate::base::phase;
+use crate::logging::{self, logger};
 use crate::phases::{global, verify_git_repository};
 
-#[allow(unused_imports)]
-use crate::logging;
-
 pub struct ConfigureLoggingBackends;
+
+#[allow(dead_code)]
+pub fn register_debug_backends(logger: &logger::Logger) {
+    logger.register_backend(Box::new(logging::backends::DebugStdoutBackend));
+}
+
+#[allow(dead_code)]
+pub fn register_release_backends(logger: &logger::Logger) {
+    logger.register_backend(Box::new(logging::backends::ErrorStdoutBackend));
+}
 
 impl phase::NonTerminalPhaseTrait<global::Global> for ConfigureLoggingBackends {
     fn name(&self) -> &'static str {
@@ -24,9 +32,12 @@ impl phase::NonTerminalPhaseTrait<global::Global> for ConfigureLoggingBackends {
             colored::control::set_override(true);
         }
 
-        #[cfg(debug)]
-        {
-            global.logger.register_backend(Box::new(logging::backends::StdoutBackend));
+        #[cfg(debug_assertions)] {
+            register_debug_backends(&global.logger);
+        }
+
+        #[cfg(not(debug_assertions))] {
+            register_release_backends(&global.logger);
         }
 
         phase::continue_with(Box::new(verify_git_repository::VerifyGitRepository))

@@ -3,7 +3,8 @@ use std::{process, sync};
 use command_fds::{CommandFdExt, FdMapping};
 
 use crate::system::libc_wrappers;
-use crate::logging::{self, logger};
+use crate::logging::logger;
+use crate::io::safe_stdio;
 
 const DEFAULT_PAGER:           &'static str = "less";
 const DEFAULT_PAGER_ARGUMENTS: &'static str = "-FRX";
@@ -91,7 +92,7 @@ impl Pager {
                 break;
             }
 
-            logging::safe_println(&output_text);
+            safe_stdio::safe_println(&output_text);
         }
 
         empty

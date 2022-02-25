@@ -3,10 +3,10 @@ use std::str;
 use git2;
 
 use crate::phases::global;
+use crate::{git, errors};
 use crate::issues::parser;
 use crate::steps::issues_tree;
-use crate::io::{decorate, paging};
-use crate::{git, logging, errors};
+use crate::io::{decorate, paging, safe_stdio};
 
 fn extract_formatted_title<'repository>(repository: &'repository git2::Repository, blob_tree_entry: &git2::TreeEntry<'repository>)
 -> Result<String, String> {
@@ -46,7 +46,7 @@ pub fn list_issues<'repository>(global: &global::Global, repository: &'repositor
         pager.wait();
 
         if empty {
-            logging::safe_println("There is no issue in this project yet!");
+            safe_stdio::safe_println("There is no issue in this project yet!");
         }
     })
     .map_err(errors::issues_tree::explain_error)

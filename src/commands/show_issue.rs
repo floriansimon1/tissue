@@ -2,12 +2,10 @@ use std::{path, str};
 
 use git2;
 
-use crate::errors;
-use crate::commands;
-use crate::io::paging;
-use crate::logging;
 use crate::phases::global;
 use crate::steps::issues_tree;
+use crate::{commands, errors};
+use crate::io::{paging, safe_stdio};
 
 #[derive(Debug)]
 pub struct ShowCommand {
@@ -41,7 +39,7 @@ pub fn show_issue<'repository>(global: &global::Global, repository: &'repository
 
     let pager = paging::Pager::new();
 
-    logging::safe_println(&issue_text);
+    safe_stdio::safe_println(&issue_text);
 
     pager.wait();
 

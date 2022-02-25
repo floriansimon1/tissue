@@ -15,3 +15,9 @@ pub fn safe_println(string: &str) {
     safe_print(string);
     safe_print("\n");
 }
+
+pub fn safe_flush_stdout() {
+    use io::Write;
+
+    let _ = io::stdout().flush();
+}

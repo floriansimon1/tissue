@@ -3,26 +3,25 @@ use std::{io, sync, time, thread};
 
 use antidote;
 
-use crate::logging::entry::LogEntry;
-use crate::logging::backends::LoggingBackend;
+use crate::logging::{backends, entry};
 
-type LoggingBackendsList = Vec<Box<dyn LoggingBackend>>;
+type LoggingBackendsList = Vec<Box<dyn backends::LoggingBackend>>;
 
 pub struct Logger {
     end_signal_sender:   mpsc::Sender<()>,
-    log_message_sender:  mpsc::Sender<LogEntry>,
     logging_join_handle: thread::JoinHandle<()>,
     flush_requested:     sync::Arc<atomic::AtomicBool>,
+    log_message_sender:  mpsc::Sender<entry::LogEntry>,
     logging_backends:    sync::Arc<antidote::Mutex<LoggingBackendsList>>,
 }
 
 impl Logger {
-    fn log_in_current_thread(logging_backend: &Box<dyn LoggingBackend>, entry: &LogEntry) {
+    fn log_in_current_thread(logging_backend: &Box<dyn backends::LoggingBackend>, entry: &entry::LogEntry) {
         (*logging_backend).log_entry(&entry);
     }
 
     #[allow(dead_code)]
-    pub fn register_backend(&self, backend: Box<dyn LoggingBackend>) {
+    pub fn register_backend(&self, backend: Box<dyn backends::LoggingBackend>) {
         (*self.logging_backends.lock()).push(backend);
     }
 
@@ -35,15 +34,15 @@ impl Logger {
     }
 
     pub fn log_error(&self, message: String) {
-        self.log_trace(message);
+        let _ = self.log_message_sender.send(entry::LogEntry::new(message, entry::Level::Error));
     }
 
     pub fn log_info(&self, message: String) {
-        self.log_trace(message);
+        let _ = self.log_message_sender.send(entry::LogEntry::new(message, entry::Level::Info));
     }
 
     pub fn log_trace(&self, message: String) {
-        let _ = self.log_message_sender.send(LogEntry::new(message));
+        let _ = self.log_message_sender.send(entry::LogEntry::new(message, entry::Level::Trace));
     }
 
     pub fn try_flush_all(&self) {
@@ -56,7 +55,7 @@ impl Logger {
 
     pub fn new() -> io::Result<Logger> {
         let (end_signal_sender,  end_signal_receiver)  = mpsc::channel::<()>();
-        let (log_message_sender, log_message_receiver) = mpsc::channel::<LogEntry>();
+        let (log_message_sender, log_message_receiver) = mpsc::channel::<entry::LogEntry>();
         let flush_requested                            = sync::Arc::new(atomic::AtomicBool::new(false));
         let logging_backends                           = sync::Arc::new(antidote::Mutex::new(LoggingBackendsList::new()));
 

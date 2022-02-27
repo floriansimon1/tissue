@@ -5,9 +5,9 @@ use git2;
 
 use crate::errors;
 
-pub fn list_files<'tree, 'repository>(tree: &'tree git2::Tree<'repository>)
+pub fn list_directories<'tree, 'repository>(tree: &'tree git2::Tree<'repository>)
 -> impl Iterator<Item = git2::TreeEntry<'tree>> {
-    tree.iter().filter(|entry| entry.kind().filter(|kind| matches!(kind, git2::ObjectType::Blob)).is_some())
+    tree.iter().filter(|entry| entry.kind().filter(|kind| matches!(kind, git2::ObjectType::Tree)).is_some())
 }
 
 pub fn get_tree<'repository>(repository: &'repository git2::Repository, commit: git2::Commit<'repository>, path: &path::Path)
@@ -15,6 +15,10 @@ pub fn get_tree<'repository>(repository: &'repository git2::Repository, commit: 
     let root = commit
     .tree()
     .or(Err(errors::tree_listing::TreeListingError::CannotGetRoot))?;
+
+    if path == path::Path::new(".") {
+        return Ok(root);
+    }
 
     let directory = root.get_path(path).or(Err(errors::tree_listing::TreeListingError::CannotGetTreeEntry))?;
 

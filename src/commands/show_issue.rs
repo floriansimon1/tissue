@@ -3,7 +3,8 @@ use std::{path, str};
 use git2;
 
 use crate::phases::global;
-use crate::steps::issues_tree;
+use crate::steps::get_tree;
+use crate::structure::paths;
 use crate::{commands, errors};
 use crate::io::{paging, safe_stdio};
 
@@ -18,12 +19,12 @@ pub fn make_show_command(issue_name: String) -> commands::Command {
 
 pub fn show_issue<'repository>(global: &global::Global, repository: &'repository git2::Repository, issue_name: &str)
 -> Result<(), ()> {
-    let issue_text = issues_tree
-    ::get_issues_tree(&global, &repository)
-    .map_err(errors::issue::IssueFetchError::IssuesDirectoryError)
+    let issue_text = get_tree
+    ::get_project_tree(&global, &repository, path::Path::new("."))
+    .or(Err(errors::issue::IssueFetchError::RootDirectoryError))
     .and_then(|issues_tree| {
         issues_tree
-        .get_path(path::Path::new(issue_name))
+        .get_path(&paths::get_issue_file_path(issue_name))
         .or(Err(errors::issue::IssueFetchError::CannotGetTreeEntry))
     })
     .and_then(|tree_entry| {

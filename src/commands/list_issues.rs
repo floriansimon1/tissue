@@ -1,52 +1,61 @@
-use std::str;
+use std::{path, str};
 
 use git2;
 
-use crate::phases::global;
 use crate::{git, errors};
+use crate::phases::global;
 use crate::issues::parser;
-use crate::steps::issues_tree;
+use crate::steps::get_tree;
+use crate::structure::paths;
 use crate::io::{decorate, paging, safe_stdio};
 
-fn extract_formatted_title<'repository>(repository: &'repository git2::Repository, blob_tree_entry: &git2::TreeEntry<'repository>)
--> Result<String, String> {
-    let object = blob_tree_entry
+fn extract_formatted_title<'repository>(repository: &'repository git2::Repository, issue_tree_tree_entry: &git2::TreeEntry<'repository>)
+-> Result<String, &'static str> {
+    let directory_object = issue_tree_tree_entry
     .to_object(&repository)
-    .map_err(|_| decorate::decorate_placeholder("Invalid Git object"))?;
+    .or(Err("Cannot get the Git object of the issue directory"))?;
 
-    let blob = object
-    .as_blob()
-    .ok_or_else(|| decorate::decorate_placeholder("Invalid Git object type"))?;
+    let directory = directory_object.as_tree().ok_or("Issue is not a directory")?;
+
+    let issue_file_tree_entry = directory
+    .get_path(path::Path::new(paths::ISSUE_FILE))
+    .or(Err("Issue file not found"))?;
+
+    let file_object = issue_file_tree_entry
+    .to_object(&repository)
+    .or(Err("Cannot get the Git object of the issue file"))?;
+
+    let blob = file_object.as_blob().ok_or("Cannot read the issue file")?;
 
     let text = str
     ::from_utf8(blob.content())
-    .map_err(|_| decorate::decorate_placeholder("Invalid UTF-8"))?;
+    .or(Err("Invalid UTF-8"))?;
 
-    parser::parse_title(text).ok_or_else(|| decorate::decorate_placeholder("Untitled"))
+    parser::parse_title(text).ok_or("Untitled")
 }
 
-fn format_entry<'repository>(repository: &'repository git2::Repository, blob_tree_entry: &git2::TreeEntry<'repository>)
+fn format_issue_directory<'repository>(repository: &'repository git2::Repository, issue_tree_tree_entry: &git2::TreeEntry<'repository>)
 -> String {
-    let title     = extract_formatted_title(&repository, &blob_tree_entry).unwrap_or_else(String::from);
-    let file_name = blob_tree_entry.name().map(String::from).unwrap_or_else(|| decorate::decorate_placeholder("Invalid file"));
+    let title     = extract_formatted_title(&repository, &issue_tree_tree_entry).unwrap_or_else(decorate::decorate_placeholder);
+    let file_name = issue_tree_tree_entry.name().map(String::from).unwrap_or_else(|| decorate::decorate_placeholder("Invalid file"));
 
     decorate::list_element(&format!("{file_name} - {title}"))
 }
 
 pub fn list_issues<'repository>(global: &global::Global, repository: &'repository git2::Repository)
 -> Result<(), ()> {
-    issues_tree
+    get_tree
     ::get_issues_tree(&global, &repository)
     .map(|tree| {
-        let mut pager = paging::Pager::new();
-        let files     = git::list_files(&tree);
+        let mut pager   = paging::Pager::new();
+        let directories = git::list_directories(&tree);
 
-        let empty = pager.page_lines(&global.logger, files.map(|blob| format_entry(&repository, &blob)));
+        let empty = pager.page_lines(&global.logger, directories.map(|blob| format_issue_directory(&repository, &blob)));
 
         pager.wait();
 
         if empty {
-            safe_stdio::safe_println("There is no issue in this project yet!");
+            safe_stdio::safe_println(&decorate::decorate_success("There is no issue in this project yet!"));
         }
     })
     .map_err(errors::issues_tree::explain_error)

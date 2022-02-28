@@ -1,12 +1,11 @@
-use std::{path, str};
+use std::{path, str, sync};
 
 use git2;
 
-use crate::{git, errors};
 use crate::phases::global;
-use crate::issues::parser;
 use crate::steps::get_tree;
 use crate::structure::paths;
+use crate::{errors, git, issues};
 use crate::io::{decorate, paging, safe_stdio};
 
 fn extract_formatted_title<'repository>(repository: &'repository git2::Repository, issue_tree_tree_entry: &git2::TreeEntry<'repository>)
@@ -31,7 +30,7 @@ fn extract_formatted_title<'repository>(repository: &'repository git2::Repositor
     ::from_utf8(blob.content())
     .or(Err("Invalid UTF-8"))?;
 
-    parser::parse_title(text).ok_or("Untitled")
+    issues::parse_title(text).ok_or("Untitled")
 }
 
 fn format_issue_directory<'repository>(repository: &'repository git2::Repository, issue_tree_tree_entry: &git2::TreeEntry<'repository>)
@@ -42,8 +41,7 @@ fn format_issue_directory<'repository>(repository: &'repository git2::Repository
     decorate::list_element(&format!("{file_name} - {title}"))
 }
 
-pub fn list_issues<'repository>(global: &global::Global, repository: &'repository git2::Repository)
--> Result<(), ()> {
+pub fn list_issues(global: &global::Global, repository: sync::Arc<git2::Repository>) -> Result<(), ()> {
     get_tree
     ::get_issues_tree(&global, &repository)
     .map(|tree| {

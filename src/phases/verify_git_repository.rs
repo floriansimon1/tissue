@@ -1,9 +1,9 @@
-use std::{convert, path};
+use std::{convert, path, sync};
 
 use crate::git;
 use crate::base::phase;
 use crate::logging::logger;
-use crate::phases::{global, execute_command};
+use crate::phases::{global, prepare_project_lazy_values};
 
 pub struct VerifyGitRepository;
 
@@ -15,7 +15,8 @@ impl phase::NonTerminalPhaseTrait<global::Global> for VerifyGitRepository {
     fn run(self: Box<Self>, global: &mut global::Global) -> phase::Phase<global::Global> {
         open_repository(&global.logger, &global.working_directory_path)
         .and_then(|repository| open_project_branch(&global.logger, repository, &global.configuration.get_project_branch()))
-        .map(execute_command::ExecuteCommand::new)
+        .map(sync::Arc::new)
+        .map(prepare_project_lazy_values::PrepareProjectLazyValues::new)
         .map(phase::continue_with)
         .unwrap_or_else(convert::identity)
     }

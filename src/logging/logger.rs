@@ -8,10 +8,10 @@ use crate::logging::{backends, entry};
 type LoggingBackendsList = Vec<Box<dyn backends::LoggingBackend>>;
 
 pub struct Logger {
-    end_signal_sender:   mpsc::Sender<()>,
+    end_signal_sender:   mpsc::SyncSender<()>,
     logging_join_handle: thread::JoinHandle<()>,
     flush_requested:     sync::Arc<atomic::AtomicBool>,
-    log_message_sender:  mpsc::Sender<entry::LogEntry>,
+    log_message_sender:  mpsc::SyncSender<entry::LogEntry>,
     logging_backends:    sync::Arc<antidote::Mutex<LoggingBackendsList>>,
 }
 
@@ -54,8 +54,8 @@ impl Logger {
     }
 
     pub fn new() -> io::Result<Logger> {
-        let (end_signal_sender,  end_signal_receiver)  = mpsc::channel::<()>();
-        let (log_message_sender, log_message_receiver) = mpsc::channel::<entry::LogEntry>();
+        let (end_signal_sender,  end_signal_receiver)  = mpsc::sync_channel::<()>(1);
+        let (log_message_sender, log_message_receiver) = mpsc::sync_channel::<entry::LogEntry>(50);
         let flush_requested                            = sync::Arc::new(atomic::AtomicBool::new(false));
         let logging_backends                           = sync::Arc::new(antidote::Mutex::new(LoggingBackendsList::new()));
 

@@ -11,6 +11,7 @@ pub struct ParseCommandLine;
 const WORKING_DIRECTORY_ARGUMENT_NAME: &'static str = "working directory";
 const ISSUE_NAME_ARGUMENT_NAME:        &'static str = "issue name";
 const LIST_ISSUES_SUBCOMMAND:          &'static str = "list";
+const LINT_ISSUE_SUBCOMMAND:           &'static str = "lint";
 const SHOW_ISSUE_SUBCOMMAND:           &'static str = "show";
 
 impl phase::NonTerminalPhaseTrait<global::Global> for ParseCommandLine {
@@ -19,16 +20,14 @@ impl phase::NonTerminalPhaseTrait<global::Global> for ParseCommandLine {
     }
 
     fn run(self: Box<Self>, global: &mut global::Global) -> phase::Phase<global::Global> {
-        let show_issue_subcommand  = get_show_issue_subcommand();
-        let list_issues_subcommand = get_list_issues_subcommand();
-
         let mut app = clap
         ::App
         ::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
         .args(get_general_args())
-        .subcommand(show_issue_subcommand)
-        .subcommand(list_issues_subcommand);
+        .subcommand(get_lint_issue_subcommand())
+        .subcommand(get_show_issue_subcommand())
+        .subcommand(get_list_issues_subcommand());
 
         let version_message  = app.render_long_version();
         let matches_or_error = app.try_get_matches_from_mut(env::args_os());
@@ -48,6 +47,7 @@ impl phase::NonTerminalPhaseTrait<global::Global> for ParseCommandLine {
         .map(|(subcommand, arguments)| {
             match subcommand {
                 LIST_ISSUES_SUBCOMMAND => commands::Command::List,
+                LINT_ISSUE_SUBCOMMAND  => commands::make_lint_command(arguments.value_of_lossy(ISSUE_NAME_ARGUMENT_NAME).unwrap().into_owned()),
                 SHOW_ISSUE_SUBCOMMAND  => commands::make_show_command(arguments.value_of_lossy(ISSUE_NAME_ARGUMENT_NAME).unwrap().into_owned()),
                 _                      => panic!("A command is configured in the parser but is not handled!")
             }
@@ -83,6 +83,14 @@ fn get_show_issue_subcommand() -> clap::App<'static> {
     ::new(SHOW_ISSUE_SUBCOMMAND)
     .arg(clap::Arg::new(ISSUE_NAME_ARGUMENT_NAME).required(true).allow_invalid_utf8(true))
     .about("Show a single issue identified by its name")
+}
+
+fn get_lint_issue_subcommand() -> clap::App<'static> {
+    clap
+    ::App
+    ::new(LINT_ISSUE_SUBCOMMAND)
+    .arg(clap::Arg::new(ISSUE_NAME_ARGUMENT_NAME).required(true).allow_invalid_utf8(true))
+    .about("Looks for defects in a specific issue")
 }
 
 fn get_general_args() -> Vec<clap::Arg<'static>> {

@@ -1,10 +1,12 @@
 use pulldown_cmark;
 
+use crate::issues::parser::make_markdown_parser;
+
 pub fn parse_title(input: &str) -> Option<String> {
     let mut accumulate_text = false;
     let mut fragments       = Vec::<pulldown_cmark::CowStr>::new();
 
-    for event in pulldown_cmark::Parser::new(input) {
+    for event in make_markdown_parser::make_markdown_parser(input) {
         match event {
             pulldown_cmark::Event::Start(tag)
             | pulldown_cmark::Event::End(tag) => {

@@ -5,6 +5,7 @@ mod io;
 mod git;
 mod base;
 mod steps;
+mod users;
 mod phases;
 mod errors;
 mod system;

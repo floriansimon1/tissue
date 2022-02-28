@@ -5,9 +5,10 @@ mod setup_crash_handler;
 mod verify_git_repository;
 mod configure_logging_backends;
 
-#[cfg(test)]
-mod verify_git_repository_tests;
-
 pub mod global;
+pub mod prepare_project_lazy_values;
 
 pub use initial::make_initial_phase;
+
+#[cfg(test)]
+mod verify_git_repository_tests;

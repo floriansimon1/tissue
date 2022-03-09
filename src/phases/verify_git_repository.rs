@@ -1,5 +1,7 @@
 use std::{convert, path, sync};
 
+use antidote;
+
 use crate::git;
 use crate::base::phase;
 use crate::logging::logger;
@@ -12,9 +14,12 @@ impl phase::NonTerminalPhaseTrait<global::Global> for VerifyGitRepository {
         "VerifyGitRepository"
     }
 
-    fn run(self: Box<Self>, global: &mut global::Global) -> phase::Phase<global::Global> {
+    fn run(self: Box<Self>, global: sync::Arc<antidote::RwLock<global::Global>>) -> phase::Phase<global::Global> {
+        let global = global.write();
+
         open_repository(&global.logger, &global.working_directory_path)
         .and_then(|repository| open_project_branch(&global.logger, repository, &global.configuration.get_project_branch()))
+        .map(antidote::RwLock::new)
         .map(sync::Arc::new)
         .map(prepare_project_lazy_values::PrepareProjectLazyValues::new)
         .map(phase::continue_with)

@@ -1,3 +1,7 @@
+use std::sync;
+
+use antidote;
+
 use crate::base::phase;
 use crate::phases::global;
 use crate::phases::setup_crash_handler;
@@ -9,7 +13,7 @@ impl phase::NonTerminalPhaseTrait<global::Global> for InitialPhase {
         "InitialPhase"
     }
 
-    fn run(self: Box<Self>, _: &mut global::Global) -> phase::Phase<global::Global> {
+    fn run(self: Box<Self>, _: sync::Arc<antidote::RwLock<global::Global>>) -> phase::Phase<global::Global> {
         phase::continue_with(Box::new(setup_crash_handler::SetupCrashHandler))
     }
 }

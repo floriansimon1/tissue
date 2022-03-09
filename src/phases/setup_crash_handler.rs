@@ -1,3 +1,6 @@
+use std::sync;
+
+use antidote;
 use human_panic::setup_panic;
 
 use crate::base::phase;
@@ -10,7 +13,7 @@ impl phase::NonTerminalPhaseTrait<global::Global> for SetupCrashHandler {
         "SetupCrashHandler"
     }
 
-    fn run(self: Box<Self>, _: &mut global::Global) -> phase::Phase<global::Global> {
+    fn run(self: Box<Self>, _: sync::Arc<antidote::RwLock<global::Global>>) -> phase::Phase<global::Global> {
         setup_panic!(Metadata {
             version:  env!("CARGO_PKG_VERSION").into(),
             name:     env!("CARGO_PKG_NAME").into(),

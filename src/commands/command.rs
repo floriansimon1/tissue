@@ -1,6 +1,6 @@
 use crate::commands::{lint_issue, show_issue};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Command {
     Help,
     List,

@@ -1,3 +1,7 @@
+use std::sync;
+
+use antidote;
+
 pub enum Phase<Globals> {
     #[allow(dead_code)] TerminalError,
     TerminalSuccess,
@@ -12,7 +16,7 @@ impl<Globals> Phase<Globals> {
         }
     }
 
-    pub fn next(self, globals: &mut Globals) -> Phase<Globals> {
+    pub fn next(self, globals: sync::Arc<antidote::RwLock<Globals>>) -> Phase<Globals> {
         match self {
             Phase::NonTerminalPhase(phase) => phase.run(globals),
             _                              => self
@@ -41,6 +45,6 @@ pub fn continue_with<Globals>(phase: Box<dyn NonTerminalPhaseTrait<Globals>>) ->
 }
 
 pub trait NonTerminalPhaseTrait<Globals> {
-    fn run(self: Box<Self>, globals: &mut Globals) -> Phase<Globals>;
-    fn name(&self)                                 -> &'static str;
+    fn run(self: Box<Self>, globals: sync::Arc<antidote::RwLock<Globals>>) -> Phase<Globals>;
+    fn name(&self)                                                         -> &'static str;
 }

@@ -1,6 +1,7 @@
-use std::{env, path};
+use std::{env, path, sync};
 
 use clap;
+use antidote;
 
 use crate::commands;
 use crate::base::phase;
@@ -19,7 +20,7 @@ impl phase::NonTerminalPhaseTrait<global::Global> for ParseCommandLine {
         "ParseCommandLine"
     }
 
-    fn run(self: Box<Self>, global: &mut global::Global) -> phase::Phase<global::Global> {
+    fn run(self: Box<Self>, global: sync::Arc<antidote::RwLock<global::Global>>) -> phase::Phase<global::Global> {
         let mut app = clap
         ::App
         ::new(env!("CARGO_PKG_NAME"))
@@ -42,7 +43,7 @@ impl phase::NonTerminalPhaseTrait<global::Global> for ParseCommandLine {
 
         let matches = matches_or_error.unwrap();
 
-        global.command = matches
+        (*global.write()).command = matches
         .subcommand()
         .map(|(subcommand, arguments)| {
             match subcommand {
@@ -54,13 +55,15 @@ impl phase::NonTerminalPhaseTrait<global::Global> for ParseCommandLine {
         })
         .unwrap_or(commands::Command::Help);
 
-        if let commands::Command::Help = global.command {
+        if let commands::Command::Help = global.read().command {
             app.print_long_help().unwrap();
 
             return phase::Phase::TerminalSuccess;
         }
 
         if let Some(path) = matches.value_of(WORKING_DIRECTORY_ARGUMENT_NAME).map(path::PathBuf::from) {
+            let mut global = global.write();
+
             global.logger.log_info(format!("Setting working directory to `{}`", path.display()));
 
             global.working_directory_path = path;

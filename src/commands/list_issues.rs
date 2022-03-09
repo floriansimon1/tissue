@@ -1,6 +1,7 @@
 use std::{path, str, sync};
 
 use git2;
+use antidote;
 
 use crate::phases::global;
 use crate::steps::get_tree;
@@ -41,14 +42,14 @@ fn format_issue_directory<'repository>(repository: &'repository git2::Repository
     decorate::list_element(&format!("{file_name} - {title}"))
 }
 
-pub fn list_issues(global: &global::Global, repository: sync::Arc<git2::Repository>) -> Result<(), ()> {
+pub fn list_issues(global: sync::Arc<antidote::RwLock<global::Global>>, repository: sync::Arc<antidote::RwLock<git2::Repository>>) -> Result<(), ()> {
     get_tree
-    ::get_issues_tree(&global, &repository)
+    ::get_issues_tree(&global.read(), &*repository.read())
     .map(|tree| {
         let mut pager   = paging::Pager::new();
         let directories = git::list_directories(&tree);
 
-        let empty = pager.page_lines(&global.logger, directories.map(|blob| format_issue_directory(&repository, &blob)));
+        let empty = pager.page_lines(&global.read().logger, directories.map(|blob| format_issue_directory(&*repository.read(), &blob)));
 
         pager.wait();
 
@@ -58,5 +59,5 @@ pub fn list_issues(global: &global::Global, repository: sync::Arc<git2::Reposito
     })
     .map_err(errors::issues_tree::explain_error)
     .map_err(String::from)
-    .map_err(|error| global.logger.log_error(error))
+    .map_err(|error| global.read().logger.log_error(error))
 }

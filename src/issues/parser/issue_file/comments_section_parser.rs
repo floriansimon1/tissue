@@ -1,7 +1,13 @@
+use std::sync;
+
+use async_trait;
+use antidote;
+
 use crate::issues::issue;
-use crate::logging::logger;
-use crate::phases::prepare_project_lazy_values;
+use crate::phases::global;
 use crate::issues::parser::issue_file::section_parser;
+
+use crate::issues::parser::issue_file::field_mapping_parsing_result::FieldMappingParsingResult;
 
 pub const COMMENTS_SECTION: &'static str = "comments";
 
@@ -13,12 +19,11 @@ impl CommentsSectionParser {
     }
 }
 
+#[async_trait::async_trait]
 impl section_parser::SectionParser<'_> for CommentsSectionParser {
-    #[allow(unused_variables)]
-    fn process<'input>(&mut self, logger: &logger::Logger, issue: &mut issue::Issue, event: pulldown_cmark::Event<'input>)
+    fn process<'input>(&mut self, _: sync::Arc<antidote::RwLock<global::Global>>, _: &mut issue::Issue, _: pulldown_cmark::Event<'input>)
     {}
 
-    #[allow(unused_variables)]
-    fn save_on(self: Box<Self>, logger: &logger::Logger, project_lazy_values: &prepare_project_lazy_values::ProjectLazyValues, issue: &mut issue::Issue)
+    async fn save_on(self: Box<Self>, _: sync::Arc<antidote::RwLock<global::Global>>, _: FieldMappingParsingResult, _: &mut issue::Issue)
     {}
 }

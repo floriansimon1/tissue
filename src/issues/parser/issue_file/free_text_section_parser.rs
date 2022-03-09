@@ -1,9 +1,15 @@
+use std::sync;
+
+use async_trait;
+use antidote;
 use matches;
 
 use crate::issues::issue;
+use crate::phases::global;
 use crate::logging::logger;
-use crate::phases::prepare_project_lazy_values;
 use crate::issues::parser::issue_file::section_parser;
+
+use crate::issues::parser::issue_file::field_mapping_parsing_result::FieldMappingParsingResult;
 
 pub enum FreeTextSectionParser<'input> {
     EmptySection,
@@ -30,14 +36,15 @@ impl<'input> FreeTextSectionParser<'input> {
     }
 }
 
+#[async_trait::async_trait]
 impl<'input> section_parser::SectionParser<'input> for FreeTextSectionParser<'input> {
-    fn process(&mut self, logger: &logger::Logger, _: &mut issue::Issue, event: pulldown_cmark::Event<'input>) {
+    fn process(&mut self, global: sync::Arc<antidote::RwLock<global::Global>>, _: &mut issue::Issue, event: pulldown_cmark::Event<'input>) {
         if matches!(self, FreeTextSectionParser::EmptySection) {
             *self = FreeTextSectionParser::new_untitled();
 
-            log_free_text_trace(logger, "Initializing a new untitled section with an event");
+            log_free_text_trace(&global.read().logger, "Initializing a new untitled section with an event");
         } else {
-            log_free_text_trace(logger, "Accumulating a new event");
+            log_free_text_trace(&global.read().logger, "Accumulating a new event");
         }
 
         if let FreeTextSectionParser::OpenedSection(data) = self {
@@ -45,14 +52,14 @@ impl<'input> section_parser::SectionParser<'input> for FreeTextSectionParser<'in
         }
     }
 
-    fn save_on(self: Box<Self>, logger: &logger::Logger, _: &prepare_project_lazy_values::ProjectLazyValues, issue: &mut issue::Issue<'input>) {
+    async fn save_on(self: Box<Self>, global: sync::Arc<antidote::RwLock<global::Global>>, _: FieldMappingParsingResult, issue: &mut issue::Issue<'input>) {
         match *self {
             FreeTextSectionParser::EmptySection => {
-                log_free_text_trace(logger, "Ignoring empty free-text section");
+                log_free_text_trace(&global.read().logger, "Ignoring empty free-text section");
             },
 
             FreeTextSectionParser::OpenedSection(data) => {
-                log_free_text_trace(logger, "Saving a new free-text section in the issue");
+                log_free_text_trace(&global.read().logger, "Saving a new free-text section in the issue");
 
                 issue.add_free_text_section(data);
             }

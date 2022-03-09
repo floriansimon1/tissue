@@ -37,6 +37,10 @@ impl Logger {
         let _ = self.log_message_sender.send(entry::LogEntry::new(message, entry::Level::Error));
     }
 
+    pub fn log_warning(&self, message: String) {
+        let _ = self.log_message_sender.send(entry::LogEntry::new(message, entry::Level::Warning));
+    }
+
     pub fn log_info(&self, message: String) {
         let _ = self.log_message_sender.send(entry::LogEntry::new(message, entry::Level::Info));
     }

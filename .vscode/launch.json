@@ -19,7 +19,7 @@
                     "kind": "bin"
                 }
             },
-            "args": ["list"],
+            "args": ["--working-directory", "/home/florian/Projects/tissue-test-project/", "lint", "T-00002"],
             "cwd": "${workspaceFolder}"
         },
         {

@@ -1,5 +1,9 @@
 use colored;
 
+use std::sync;
+
+use antidote;
+
 use crate::base::phase;
 use crate::logging::{self, logger};
 use crate::phases::{global, verify_git_repository};
@@ -22,7 +26,9 @@ impl phase::NonTerminalPhaseTrait<global::Global> for ConfigureLoggingBackends {
     }
 
     #[allow(unused_variables)]
-    fn run(self: Box<Self>, global: &mut global::Global) -> phase::Phase<global::Global> {
+    fn run(self: Box<Self>, global: sync::Arc<antidote::RwLock<global::Global>>) -> phase::Phase<global::Global> {
+        let global = global.read();
+
         /*
         * We might be using pagers later on, in which case isatty might give different results.
         * We configure the color library to do what we want to prevent it from lazily detecting

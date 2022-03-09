@@ -20,11 +20,9 @@ fn check_that_value_gets_computed_on_request() {
 fn function_is_not_computed_if_not_awaited() {
     let global = sync::Arc::new(antidote::Mutex::new(false));
 
-    let value = lazy_value::make_lazy(|called| async move {
+    lazy_value::make_lazy(|called: sync::Arc<antidote::Mutex<bool>>| async move {
         *called.lock() = true;
     });
-
-    executor::block_on(value.get(global.clone()));
 
     assert_eq!(*global.lock(), false);
 }
@@ -33,7 +31,7 @@ fn function_is_not_computed_if_not_awaited() {
 fn result_can_be_queried_multiple_times_but_are_computed_once() {
     let global = sync::Arc::new(antidote::Mutex::new(0u8));
 
-    let value = lazy_value::make_lazy(|calls| async move {
+    let value = lazy_value::make_lazy(|calls: sync::Arc<antidote::Mutex<u8>>| async move {
         *calls.lock() += 1;
     });
 

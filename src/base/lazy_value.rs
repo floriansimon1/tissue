@@ -4,14 +4,14 @@ use antidote;
 use futures::future;
 
 pub fn make_lazy<Global, Value, Future, Λ>(λ: Λ) -> LazyValue<Global, Value>
-where Value:         Sync + Send,
-      Global:        Sync + Send + 'static,
+where
+      Global:        Send + 'static,
       Future:        future::Future<Output = Value> + Send,
-      Λ:             (FnOnce(sync::Arc<antidote::Mutex<Global>>) -> Future) + Send + Sync + 'static
+      Λ:             (FnOnce(Global) -> Future) + Send + 'static
 {
     use future::FutureExt;
 
-    let λ = Box::new(move |global: sync::Arc<antidote::Mutex<Global>>| (async move {
+    let λ = Box::new(move |global: Global| (async move {
         sync::Arc::new(λ(global).await)
     }).boxed());
 
@@ -19,7 +19,7 @@ where Value:         Sync + Send,
 }
 
 pub enum LazyValueData<Global, Value> {
-    AwaitingComputeOrder(Option<Box<dyn FnOnce(sync::Arc<antidote::Mutex<Global>>) -> future::BoxFuture<'static, sync::Arc<Value>>>>),
+    AwaitingComputeOrder(Option<Box<dyn FnOnce(Global) -> future::BoxFuture<'static, sync::Arc<Value>> + Send>>),
     Computed(future::Shared<future::BoxFuture<'static, sync::Arc<Value>>>),
 }
 
@@ -28,12 +28,10 @@ pub struct LazyValue<Global, Value> {
 }
 
 impl<Global, Value> LazyValue<Global, Value> where Value: Sync + Send {
-    pub fn get(&self, global: sync::Arc<antidote::Mutex<Global>>) -> future::Shared<future::BoxFuture<'static, sync::Arc<Value>>> {
+    pub fn get(&self, global: Global) -> future::Shared<future::BoxFuture<'static, sync::Arc<Value>>> {
         let value = &mut *self.data.lock();
 
         if let LazyValueData::AwaitingComputeOrder(ref mut λ) = value {
-            // let λ = λ.take().unwrap();
-
             let future = futures::FutureExt::shared((λ.take().unwrap())(global));
 
             *value = LazyValueData::Computed(future.clone());

@@ -1,5 +1,10 @@
+use std::sync;
+
+use antidote;
+
 struct Phase1;
 struct Phase2;
+
 
 use super::phase::{self, Phase, NonTerminalPhaseTrait};
 
@@ -8,7 +13,7 @@ impl NonTerminalPhaseTrait<()> for Phase1 {
         "Phase 1"
     }
 
-    fn run(self: Box<Self>, _: &mut ()) -> phase::Phase<()> {
+    fn run(self: Box<Self>, _: sync::Arc<antidote::RwLock<()>>) -> phase::Phase<()> {
         phase::continue_with(Box::new(Phase2 {}))
     }
 }
@@ -18,7 +23,7 @@ impl phase::NonTerminalPhaseTrait<()> for Phase2 {
         "Phase 2"
     }
 
-    fn run(self: Box<Self>, _: &mut ()) -> phase::Phase<()> {
+    fn run(self: Box<Self>, _: sync::Arc<antidote::RwLock<()>>) -> phase::Phase<()> {
         phase::Phase::TerminalSuccess::<()>
     }
 }
@@ -34,7 +39,9 @@ fn check_iteration_on_phases() {
 
     assert!(current_phase.can_continue(), "We cannot go anywhere from Phase 1");
 
-    current_phase = current_phase.next(&mut ());
+    let globals = sync::Arc::new(antidote::RwLock::new(()));
+
+    current_phase = current_phase.next(globals.clone());
 
     match &current_phase {
         Phase::NonTerminalPhase(phase) => assert_eq!(phase.name(), (Phase2 {}).name()),
@@ -43,7 +50,7 @@ fn check_iteration_on_phases() {
 
     assert!(current_phase.can_continue(), "We could not run Phase 2");
 
-    current_phase = current_phase.next(&mut ());
+    current_phase = current_phase.next(globals.clone());
 
     assert!(!current_phase.can_continue(), "Phase 2 was not the last one");
 
@@ -51,7 +58,7 @@ fn check_iteration_on_phases() {
         panic!("We stayed on phase 2")
     }
 
-    current_phase = current_phase.next(&mut ()).next(&mut ()).next(&mut ()).next(&mut ());
+    current_phase = current_phase.next(globals.clone()).next(globals.clone()).next(globals.clone()).next(globals.clone());
 
     if let Phase::TerminalSuccess = current_phase {} else {
         panic!("We did not remain on our terminal success")

@@ -5,6 +5,7 @@
 pub enum Level {
     Trace,
     Info,
+    Warning,
     Error,
 }
 
